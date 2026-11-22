@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plastic in Our Ocean - Leaflet</title>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800;900&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: "Nunito", "Avenir Next", "Trebuchet MS", Arial, sans-serif;
+    color: #081c3a;
+    background: #8e9aa5;
+  }
+  .fr { font-family: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif; font-weight: 400; letter-spacing: .2px; }
+  .hand { font-family: "Caveat", "Bradley Hand", "Marker Felt", cursive; font-weight: 700; }
+
+  .sheet {
+    width: 297mm; height: 209mm;
+    display: flex; position: relative; overflow: hidden;
+    margin: 0 auto 8mm;
+    background: #fff4dc;
+    break-after: page; page-break-after: always;
+  }
+  .sheet:last-of-type { break-after: auto; page-break-after: auto; }
+  .panel { width: 99mm; height: 209mm; flex: 0 0 99mm; position: relative; overflow: hidden; }
+  .bg { position: absolute; left: 0; top: 0; width: 99mm; height: 209mm; z-index: 0; }
+  .in { position: relative; z-index: 2; }
+
+  /* fold lines */
+  .fold { position: absolute; top: 0; bottom: 0; width: 0; border-left: 0.3mm dashed #7d848a; z-index: 30; }
+  .f1 { left: 99mm; } .f2 { left: 198mm; }
+  .fold span {
+    position: absolute; left: 0; transform: translateX(-50%);
+    background: #fff; color: #555; font-size: 6.5pt; font-weight: 800;
+    padding: 0.3mm 1.8mm; border-radius: 2mm; white-space: nowrap;
+  }
+  .fold .t { top: 2mm; } .fold .b { bottom: 2mm; }
+
+  .pill {
+    display: inline-block; font-size: 7.3pt; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;
+    background: #081c3a; color: #ffd23f; padding: 1mm 3mm; border-radius: 5mm;
+    box-shadow: .7mm .7mm 0 #ff5d73;
+  }
+
+  /* inside headers */
+  .hd { position: relative; height: 34mm; padding: 9mm 9mm 0; }
+  .hd small { display: block; font-size: 7.5pt; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 900; color: #ffd23f; margin-bottom: 1.2mm; }
+  .hd h2 { font-size: 16.5pt; line-height: 1.05; color: #fff4dc; max-width: 62mm; }
+  .hd .no { position: absolute; right: 6mm; top: 3mm; font-size: 44pt; color: rgba(255,255,255,.2); line-height: 1; }
+  .bd { padding: 4mm 9mm 0; }
+  .bd p { font-size: 10pt; line-height: 1.45; margin-bottom: 2.6mm; font-weight: 600; }
+  .bd p b { background: linear-gradient(transparent 58%, #ffd23f 58%); }
+
+  /* ---------- FRONT COVER ---------- */
+  .cover-text { padding: 12mm 9mm 0; }
+  .kicker { font-size: 8pt; letter-spacing: 3px; text-transform: uppercase; font-weight: 900; color: #b8f1e0; display: flex; align-items: center; gap: 3mm; margin-bottom: 3mm; }
+  .kicker i { display: block; width: 9mm; height: 0.55mm; background: #ffd23f; }
+  .cover-text h1 span { display: block; }
+  .t1 { font-size: 50pt; color: #fff4dc; line-height: .95; text-shadow: .8mm .8mm 0 #ff5d73; }
+  .t2 { font-size: 28pt; color: #b8f1e0; line-height: 1; margin: 0 0 0 1mm; }
+  .t3 { font-size: 66pt; color: #ffd23f; line-height: .92; text-shadow: 1mm 1mm 0 #ff5d73; }
+  .sq { display: block; width: 52mm; height: 4mm; margin: 0.5mm 0 0 1mm; }
+  .sub { margin-top: 5mm; font-size: 10.5pt; line-height: 1.4; color: #e6f7f6; max-width: 62mm; font-weight: 700; }
+  .open {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: 5mm; z-index: 3;
+    background: #fff4dc; color: #081c3a; border-radius: 5mm; padding: 1.3mm 4.5mm;
+    font-size: 9pt; white-space: nowrap; box-shadow: .8mm .8mm 0 #ff5d73;
+  }
+
+  /* ---------- BACK COVER ---------- */
+  .back-text { padding: 15mm 9mm 0; }
+  .bigline { font-size: 25pt; line-height: 1.08; color: #081c3a; margin-top: 3mm; }
+  .bigline span { background: linear-gradient(transparent 62%, #ffd23f 62%); }
+  .tip {
+    position: relative; background: #fff; border: 0.5mm solid #081c3a; border-radius: 3mm;
+    padding: 6mm 4.5mm 4mm; margin-top: 9mm; transform: rotate(-1.5deg);
+    box-shadow: 1.2mm 1.2mm 0 #081c3a; font-size: 10.2pt; line-height: 1.4; font-weight: 700;
+  }
+  .tip b {
+    position: absolute; top: -3.6mm; left: 4mm; background: #ff5d73; color: #fff;
+    font-family: "Lilita One", sans-serif; font-weight: 400; font-size: 9.5pt; letter-spacing: .3px;
+    padding: 0.6mm 3mm; border-radius: 5mm;
+  }
+  .made { margin-top: 8mm; }
+  .made .lbl { font-size: 15pt; color: #081c3a; margin-bottom: 2.5mm; }
+  .chips b {
+    display: inline-block; font-family: "Lilita One", sans-serif; font-weight: 400;
+    font-size: 11pt; padding: 0.8mm 3.6mm; margin: 0 1.6mm 2.2mm 0; border: 0.5mm solid #081c3a;
+    border-radius: 5mm; box-shadow: .7mm .7mm 0 #081c3a; color: #081c3a;
+  }
+  .chips b:nth-child(odd) { transform: rotate(-2deg); }
+  .chips b:nth-child(even) { transform: rotate(2deg); }
+  .pass { position: absolute; left: 0; right: 0; bottom: 8mm; text-align: center; color: #fff4dc; font-size: 17pt; z-index: 3; }
+
+  /* ---------- FLAP ---------- */
+  .flap-text { padding: 12mm 9mm 0; }
+  .flap-text h2 { font-size: 29pt; line-height: 1; color: #081c3a; margin: 2.5mm 0 5mm; text-shadow: .5mm .5mm 0 #ffd23f; }
+  .flap-text h2 em { font-style: normal; color: #ff5d73; }
+  .fcard {
+    position: relative; display: flex; align-items: center; gap: 3.5mm; background: #fff;
+    border: 0.5mm solid #081c3a; border-radius: 4mm; padding: 3mm;
+    margin-bottom: 4.5mm; box-shadow: 1.2mm 1.2mm 0 #081c3a;
+  }
+  .fcard.a { transform: rotate(-1deg); }
+  .fcard.b { transform: rotate(.8deg); box-shadow: 1.2mm 1.2mm 0 #ff5d73; }
+  .fcard.c { transform: rotate(-.6deg); box-shadow: 1.2mm 1.2mm 0 #7b5cff; }
+  .tape { position: absolute; top: -2.6mm; left: 50%; width: 13mm; height: 4.6mm; margin-left: -6.5mm; background: rgba(255,210,63,.88); transform: rotate(-4deg); }
+  .ico { flex: 0 0 16mm; height: 16mm; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: .4mm solid #081c3a; }
+  .ico svg { width: 9mm; height: 11mm; }
+  .fcard .big { font-size: 21pt; line-height: 1; color: #ff5d73; }
+  .fcard .t { font-size: 9.4pt; line-height: 1.28; margin-top: 1mm; font-weight: 700; }
+  .note {
+    background: #fff4dc; border: 0.4mm dashed #081c3a; border-radius: 3mm;
+    padding: 3mm 4mm; font-size: 10pt; line-height: 1.38; margin-top: 2mm; font-weight: 700;
+  }
+  .tiny { font-size: 6.8pt; color: #35566e; margin-top: 2mm; font-weight: 600; }
+
+  /* ---------- LISTS / CARDS ---------- */
+  ul.dots { list-style: none; }
+  ul.dots li { position: relative; padding-left: 6mm; margin-bottom: 1.8mm; font-size: 10pt; line-height: 1.38; font-weight: 700; }
+  ul.dots li::before {
+    content: ""; position: absolute; left: 0.5mm; top: 1.5mm; width: 2.3mm; height: 2.3mm;
+    border-radius: 50%; background: #ff5d73; box-shadow: 0 0 0 0.6mm #fff4dc, 0 0 0 0.9mm #ff5d73;
+  }
+  .card2 {
+    position: relative; background: #d6f5f0; border: 0.5mm solid #081c3a; border-radius: 4mm;
+    padding: 5mm 4.5mm 2mm; margin-top: 6mm; box-shadow: 1.2mm 1.2mm 0 #081c3a;
+  }
+  .card2 h3 { position: absolute; top: -3.6mm; left: 4mm; font-size: 11.5pt; color: #fff; background: #7b5cff; padding: .5mm 3.5mm; border-radius: 5mm; border: .4mm solid #081c3a; transform: rotate(-2deg); }
+
+  .dcard { background: #0b5d7a; border-radius: 4mm; padding: 3mm 3mm 1mm; margin: 4mm 0; border: 0.5mm solid #081c3a; box-shadow: 1mm 1mm 0 #ffd23f; }
+  .dcard svg { width: 100%; display: block; }
+  .dl { font-family: "Nunito", sans-serif; font-weight: 800; font-size: 3.4px; fill: #fff; text-anchor: middle; }
+  .flow { margin: 0 0 4mm; border: 0.5mm solid #081c3a; border-radius: 3.5mm; overflow: hidden; box-shadow: 1mm 1mm 0 #ff5d73; }
+  .flow svg { display: block; width: 100%; }
+
+  .life { margin-top: 4mm; position: relative; background: #fff; border: .5mm solid #081c3a; border-radius: 3.5mm; padding: 4.5mm 3.5mm 1.5mm; box-shadow: 1mm 1mm 0 #081c3a; }
+  .life h3 { position: absolute; top: -3.4mm; left: 3.5mm; font-size: 10.5pt; color: #081c3a; background: #ffd23f; padding: .4mm 3mm; border-radius: 5mm; border: .4mm solid #081c3a; transform: rotate(-1.5deg); }
+  .row { display: flex; align-items: center; gap: 2mm; margin-bottom: 2mm; font-size: 8.6pt; font-weight: 800; }
+  .row span { flex: 0 0 19mm; }
+  .tr { flex: 1; height: 4.2mm; background: #eadfc4; border-radius: 3mm; overflow: hidden; border: 0.3mm solid #081c3a; }
+  .tr i { display: block; height: 100%; min-width: 2.5mm; border-radius: 3mm; border-right: 0.3mm solid #081c3a; }
+  .row b { flex: 0 0 14mm; text-align: right; color: #ff5d73; font-weight: 900; }
+
+  /* ---------- STEPS ---------- */
+  .step {
+    display: flex; gap: 2.8mm; align-items: center; background: #fff;
+    border-radius: 3.5mm; padding: 1.9mm 2.6mm; margin-bottom: 2.3mm;
+    box-shadow: 1mm 1mm 0 #ffd23f; font-size: 9.8pt; line-height: 1.28; font-weight: 700;
+  }
+  .step:nth-child(even) { box-shadow: 1mm 1mm 0 #2ec4c6; }
+  .step .tx { flex: 1; }
+  .step .tx b { color: #ff5d73; font-weight: 900; }
+  .num {
+    flex: 0 0 8mm; height: 8mm; border-radius: 50%; background: #ffd23f; border: 0.4mm solid #081c3a;
+    text-align: center; line-height: 7.2mm; color: #081c3a; font-size: 11pt;
+  }
+  .si { flex: 0 0 8.5mm; height: 8.5mm; border-radius: 50%; background: #081c3a; display: flex; align-items: center; justify-content: center; }
+  .si svg { width: 6mm; height: 6mm; }
+  .promise {
+    position: relative; background: #fff4dc; border-radius: 2mm; padding: 5mm 4mm 3mm;
+    transform: rotate(-1.2deg); margin-top: 5mm; font-size: 10pt;
+  }
+  .promise b { font-family: "Lilita One", sans-serif; font-weight: 400; color: #ff5d73; font-size: 12pt; }
+  .promise div.line { margin-top: 3mm; display: flex; gap: 2mm; align-items: flex-end; font-weight: 800; }
+  .promise i { flex: 1; border-bottom: 0.4mm solid #081c3a; height: 4mm; }
+  .shout { position: absolute; left: 0; right: 0; top: 145mm; text-align: center; color: #ffd23f; font-size: 19pt; transform: rotate(-3deg); z-index: 3; }
+  .end { position: absolute; left: 0; right: 0; bottom: 5mm; text-align: center; color: #fff4dc; font-size: 14pt; z-index: 3; }
+
+  @media print {
+    body { background: none; }
+    .sheet { margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ SHARED DRAWINGS ============ -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="turtle" viewBox="0 0 140 100">
+      <g fill="#3fd19a" stroke="#0f5a40" stroke-width="2.5" stroke-linejoin="round">
+        <ellipse cx="102" cy="15" rx="21" ry="8" transform="rotate(-32 102 15)"/>
+        <ellipse cx="102" cy="85" rx="21" ry="8" transform="rotate(32 102 85)"/>
+        <ellipse cx="30" cy="20" rx="13" ry="6" transform="rotate(-48 30 20)"/>
+        <ellipse cx="30" cy="80" rx="13" ry="6" transform="rotate(48 30 80)"/>
+        <path d="M30 50 L10 46 L10 54 Z"/>
+        <ellipse cx="114" cy="50" rx="15" ry="11"/>
+      </g>
+      <ellipse cx="66" cy="50" rx="42" ry="33" fill="#1f9d6f" stroke="#0f5a40" stroke-width="3"/>
+      <polygon points="52,40 66,33 80,40 80,60 66,67 52,60" fill="#8ff0c0" stroke="#0f5a40" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M52 40 L36 28 M80 40 L96 28 M52 60 L36 72 M80 60 L96 72 M66 33 L66 18 M66 67 L66 82" stroke="#0f5a40" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <g fill="#ffd23f" fill-opacity=".9"><circle cx="40" cy="50" r="3"/><circle cx="92" cy="50" r="3"/><circle cx="66" cy="22" r="2.4"/><circle cx="66" cy="78" r="2.4"/></g>
+      <circle cx="120" cy="44" r="2.8" fill="#fff"/><circle cx="120" cy="56" r="2.8" fill="#fff"/>
+      <circle cx="120.8" cy="44" r="1.3" fill="#081c3a"/><circle cx="120.8" cy="56" r="1.3" fill="#081c3a"/>
+      <path d="M124 52 Q127 54 124 56" stroke="#0f5a40" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="fish" viewBox="0 0 70 36">
+      <path d="M48 18 L68 4 Q63 18 68 32 Z" fill="currentColor"/>
+      <polygon points="20,6 30,0 38,7" fill="currentColor"/>
+      <ellipse cx="28" cy="18" rx="27" ry="14" fill="currentColor"/>
+      <path d="M42 8 Q46 18 42 28 M34 6 Q38 18 34 30" stroke="#fff" stroke-opacity=".5" stroke-width="2.2" fill="none"/>
+      <circle cx="13" cy="14" r="3.2" fill="#fff"/><circle cx="12.3" cy="14" r="1.5" fill="#081c3a"/>
+    </symbol>
+
+    <symbol id="bottle" viewBox="0 0 40 100">
+      <rect x="14" y="0" width="12" height="9" rx="2" fill="#ff5d73"/>
+      <path d="M15 9 L25 9 L25 22 C25 32 36 33 36 46 L36 92 Q36 98 30 98 L10 98 Q4 98 4 92 L4 46 C4 33 15 32 15 22 Z" fill="#bfe6ea" fill-opacity=".6" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+      <rect x="4" y="56" width="32" height="20" fill="#ff5d73" fill-opacity=".85"/>
+      <path d="M10 40 L10 90" stroke="#fff" stroke-opacity=".7" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="can" viewBox="0 0 40 60">
+      <rect x="6" y="6" width="28" height="50" rx="4" fill="#ffd23f" stroke="#fff" stroke-width="2.5"/>
+      <rect x="6" y="22" width="28" height="14" fill="#ff5d73"/>
+      <ellipse cx="20" cy="6" rx="14" ry="3.5" fill="#d9dde0" stroke="#fff" stroke-width="2"/>
+      <path d="M12 12 L12 50" stroke="#fff" stroke-opacity=".6" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="bag" viewBox="0 0 70 90">
+      <path d="M22 32 C16 2 32 2 30 32 M44 32 C40 2 56 2 50 32" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="3" stroke-linecap="round"/>
+      <path d="M12 30 L58 30 C62 50 68 70 66 86 C50 78 20 90 4 84 C6 66 10 48 12 30 Z" fill="#fff" fill-opacity=".6" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M22 44 Q28 60 20 74 M36 40 Q42 58 36 80 M48 46 Q52 60 56 74" stroke="#fff" stroke-opacity=".7" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="jelly" viewBox="0 0 50 80">
+      <path d="M3 36 C3 -2 47 -2 47 36 Q40 41 36 36 Q30 42 25 36 Q20 42 14 36 Q9 41 3 36 Z" fill="currentColor" fill-opacity=".92"/>
+      <g stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-opacity=".85">
+        <path d="M12 38 C6 48 18 56 11 68 C8 73 10 76 12 78"/>
+        <path d="M22 39 C16 50 28 58 21 70"/>
+        <path d="M32 39 C26 50 38 58 31 72"/>
+        <path d="M40 38 C34 48 46 56 40 66"/>
+      </g>
+      <circle cx="18" cy="18" r="3" fill="#fff" fill-opacity=".6"/>
+      <circle cx="30" cy="14" r="1.8" fill="#fff" fill-opacity=".5"/>
+    </symbol>
+
+    <symbol id="crab" viewBox="0 0 60 40">
+      <g stroke="#e0412f" stroke-width="3" stroke-linecap="round" fill="none">
+        <path d="M14 26 L4 32 M16 30 L8 38 M46 26 L56 32 M44 30 L52 38"/>
+        <path d="M14 18 Q4 14 6 6 M46 18 Q56 14 54 6"/>
+      </g>
+      <circle cx="6" cy="6" r="5" fill="#ff5d73"/><circle cx="54" cy="6" r="5" fill="#ff5d73"/>
+      <ellipse cx="30" cy="25" rx="20" ry="13" fill="#ff5d73"/>
+      <circle cx="23" cy="14" r="3.4" fill="#fff"/><circle cx="37" cy="14" r="3.4" fill="#fff"/>
+      <circle cx="23.5" cy="14.5" r="1.5" fill="#081c3a"/><circle cx="36.5" cy="14.5" r="1.5" fill="#081c3a"/>
+      <path d="M25 28 Q30 32 35 28" stroke="#081c3a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="weed" viewBox="0 0 30 120">
+      <path d="M15 120 C-2 98 28 82 14 60 C2 42 24 24 16 2 C32 26 8 44 22 62 C34 82 8 100 25 120 Z" fill="currentColor"/>
+    </symbol>
+
+    <symbol id="coral" viewBox="0 0 40 50">
+      <path d="M20 50 L20 26 M20 36 C12 34 8 28 8 18 M20 30 C28 28 32 22 32 12 M20 28 L20 6" stroke="currentColor" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+      <g fill="currentColor"><circle cx="8" cy="16" r="3.4"/><circle cx="32" cy="10" r="3.4"/><circle cx="20" cy="5" r="3.4"/></g>
+    </symbol>
+
+    <symbol id="shell" viewBox="0 0 40 36">
+      <path d="M20 34 C4 30 0 14 6 8 C14 -2 26 -2 34 8 C40 14 36 30 20 34 Z" fill="#ffb3c7" stroke="#e0527a" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M20 34 L20 6 M20 34 L10 9 M20 34 L30 9 M20 34 L4 16 M20 34 L36 16" stroke="#e0527a" stroke-width="1.6" fill="none"/>
+    </symbol>
+
+    <symbol id="sparkle" viewBox="0 0 20 20">
+      <path d="M10 0 C11 6 14 9 20 10 C14 11 11 14 10 20 C9 14 6 11 0 10 C6 9 9 6 10 0 Z" fill="currentColor"/>
+    </symbol>
+
+    <symbol id="bub" viewBox="0 0 10 10">
+      <circle cx="5" cy="5" r="4.2" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".75" stroke-width=".7"/>
+      <path d="M2.8 4 A2.4 2.4 0 0 1 5 2.6" stroke="#fff" stroke-width=".8" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="star" viewBox="0 0 40 40">
+      <polygon points="20,2 24.7,13.5 37.1,14.4 27.6,22.5 30.6,34.6 20,28 9.4,34.6 12.4,22.5 2.9,14.4 15.3,13.5" fill="#ff7a59" stroke="#c9472a" stroke-width="1.2" stroke-linejoin="round"/>
+      <g fill="#fff4dc"><circle cx="20" cy="12" r="1.2"/><circle cx="20" cy="20" r="1.2"/><circle cx="14" cy="17" r="1"/><circle cx="26" cy="17" r="1"/></g>
+    </symbol>
+
+    <symbol id="band" viewBox="0 0 99 40">
+      <path d="M0 0 H99 V35 C84 43 70 29 52 36 C34 43 16 31 0 38 Z" fill="#ffd23f"/>
+      <path d="M0 0 H99 V31 C84 39 70 25 52 32 C34 39 16 27 0 34 Z" fill="#ff5d73"/>
+      <path d="M0 0 H99 V27 C84 35 70 21 52 28 C34 35 16 23 0 30 Z" fill="currentColor"/>
+      <g fill="#fff" fill-opacity=".18"><circle cx="8" cy="8" r="3"/><circle cx="20" cy="18" r="1.6"/><circle cx="46" cy="6" r="2"/><circle cx="90" cy="14" r="3.4"/></g>
+    </symbol>
+
+    <pattern id="wavy" width="10" height="6" patternUnits="userSpaceOnUse">
+      <path d="M0 3 Q2.5 0 5 3 T10 3" stroke="#0b5d7a" stroke-opacity=".13" stroke-width=".45" fill="none"/>
+    </pattern>
+    <pattern id="dotsP" width="5" height="5" patternUnits="userSpaceOnUse">
+      <circle cx="2.5" cy="2.5" r=".5" fill="#0b5d7a" fill-opacity=".22"/>
+    </pattern>
+    <pattern id="dotsW" width="5" height="5" patternUnits="userSpaceOnUse">
+      <circle cx="2.5" cy="2.5" r=".5" fill="#fff" fill-opacity=".12"/>
+    </pattern>
+  </defs>
+</svg>
+
+
+<!-- ====================================================== -->
+<!-- PAGE 1 : OUTSIDE  (flap | back cover | front cover)     -->
+<!-- ====================================================== -->
+<div class="sheet">
+
+  <!-- ============ FLAP ============ -->
+  <div class="panel">
+    <svg class="bg" viewBox="0 0 99 209" preserveAspectRatio="none">
+      <rect width="99" height="209" fill="#bff0ea"/>
+      <rect width="99" height="209" fill="url(#dotsP)"/>
+      <circle cx="98" cy="6" r="32" fill="#fff" fill-opacity=".6"/>
+      <circle cx="-2" cy="128" r="26" fill="#fff" fill-opacity=".45"/>
+      <circle cx="90" cy="110" r="14" fill="#ffd23f" fill-opacity=".35"/>
+      <use href="#sparkle" x="78" y="40" width="8" height="8" style="color:#ffd23f"/>
+      <use href="#sparkle" x="89" y="52" width="4" height="4" style="color:#ff5d73"/>
+      <use href="#sparkle" x="6" y="158" width="5" height="5" style="color:#7b5cff"/>
+      <use href="#bub" x="84" y="94" width="6" height="6"/>
+      <use href="#bub" x="8" y="108" width="4" height="4"/>
+      <use href="#bub" x="88" y="140" width="4" height="4"/>
+      <path d="M0 182 C25 174 60 188 99 178 L99 209 L0 209 Z" fill="#f6dfa6"/>
+      <path d="M0 195 C30 189 65 199 99 192 L99 209 L0 209 Z" fill="#e0bd78"/>
+      <use href="#weed" x="5" y="154" width="10" height="40" style="color:#1f9d8f"/>
+      <use href="#weed" x="14" y="167" width="8" height="30" style="color:#3fd19a"/>
+      <use href="#weed" x="80" y="156" width="10" height="40" style="color:#1f9d8f"/>
+      <use href="#weed" x="88" y="168" width="7" height="28" style="color:#3fd19a"/>
+      <use href="#coral" x="66" y="166" width="11" height="13.8" style="color:#ff5d73"/>
+      <use href="#coral" x="26" y="172" width="8" height="10" style="color:#7b5cff"/>
+      <use href="#shell" x="50" y="190" width="9" height="8"/>
+      <use href="#star" x="36" y="189" width="9" height="9"/>
+      <use href="#crab" x="60" y="196" width="12" height="8"/>
+      <use href="#fish" x="38" y="160" width="15" height="7.7" style="color:#ff7a59"/>
+      <use href="#fish" width="12" height="6.2" transform="translate(64 152) scale(-1 1)" style="color:#ffd23f"/>
+    </svg>
+    <div class="in flap-text">
+      <span class="pill">Fast facts</span>
+      <h2 class="fr">Did you<br><em>know?</em></h2>
+
+      <div class="fcard a">
+        <div class="tape"></div>
+        <div class="ico" style="background:#081c3a"><svg><use href="#bag"/></svg></div>
+        <div><div class="big fr">8 million</div><div class="t">tonnes of plastic go into the ocean every year.</div></div>
+      </div>
+      <div class="fcard b">
+        <div class="tape"></div>
+        <div class="ico" style="background:#0b5d7a"><svg><use href="#bottle"/></svg></div>
+        <div><div class="big fr">450 years</div><div class="t">is about how long a plastic bottle takes to break down.</div></div>
+      </div>
+      <div class="fcard c">
+        <div class="tape"></div>
+        <div class="ico" style="background:#ff5d73"><svg style="width:11mm;height:6mm"><use href="#fish" style="color:#fff4dc"/></svg></div>
+        <div><div class="big fr">700+</div><div class="t">kinds of sea animals are hurt by plastic.</div></div>
+      </div>
+
+      <div class="note"><b>Plastic never really goes away.</b> It only breaks into smaller and smaller pieces.</div>
+      <div class="tiny">These numbers are estimates from ocean research groups.</div>
+    </div>
+  </div>
+
+  <!-- ============ BACK COVER ============ -->
+  <div class="panel">
+    <svg class="bg" viewBox="0 0 99 209" preserveAspectRatio="none">
+      <rect width="99" height="209" fill="#fff4dc"/>
+      <rect width="99" height="150" fill="url(#wavy)"/>
+      <circle cx="-4" cy="6" r="30" fill="#bff0ea"/>
+      <circle cx="104" cy="74" r="20" fill="#ffe08a" fill-opacity=".7"/>
+      <circle cx="6" cy="118" r="9" fill="#ffb3c7" fill-opacity=".7"/>
+      <use href="#sparkle" x="80" y="14" width="9" height="9" style="color:#ff5d73"/>
+      <use href="#sparkle" x="70" y="27" width="4" height="4" style="color:#ffd23f"/>
+      <use href="#sparkle" x="10" y="138" width="6" height="6" style="color:#7b5cff"/>
+      <use href="#sparkle" x="88" y="118" width="5" height="5" style="color:#0b5d7a"/>
+      <g>
+        <rect x="84" y="62" width="3" height="1.4" fill="#ff5d73" transform="rotate(30 85 62)"/>
+        <rect x="90" y="40" width="3" height="1.4" fill="#7b5cff" transform="rotate(-30 91 40)"/>
+        <rect x="4" y="96" width="3" height="1.4" fill="#2ec4c6" transform="rotate(50 5 96)"/>
+        <rect x="72" y="126" width="3" height="1.4" fill="#ffd23f" transform="rotate(-20 73 126)"/>
+      </g>
+      <circle cx="76" cy="156" r="14" fill="#ffd23f"/>
+      <circle cx="76" cy="156" r="19" fill="#ffd23f" fill-opacity=".3"/>
+      <path d="M0 158 C15 152 30 164 50 158 S85 152 99 158 L99 209 L0 209 Z" fill="#bff0ea"/>
+      <path d="M0 168 C18 162 34 174 52 168 S84 162 99 168 L99 209 L0 209 Z" fill="#5fd0d6"/>
+      <path d="M0 180 C16 174 34 186 52 180 S84 174 99 180 L99 209 L0 209 Z" fill="#0b5d7a"/>
+      <path d="M0 193 C20 187 36 199 54 193 S84 187 99 193 L99 209 L0 209 Z" fill="#081c3a"/>
+      <use href="#fish" x="12" y="174" width="16" height="8.2" style="color:#ffd23f"/>
+      <use href="#fish" width="14" height="7.2" transform="translate(88 184) scale(-1 1)" style="color:#ff7a59"/>
+      <use href="#bub" x="8" y="166" width="4" height="4"/>
+      <use href="#bub" x="88" y="173" width="4" height="4"/>
+      <use href="#bub" x="60" y="186" width="3" height="3"/>
+    </svg>
+    <div class="in back-text">
+      <span class="pill">Thank you for reading</span>
+      <div class="bigline fr">Small actions make a <span>big change.</span></div>
+      <div class="tip"><b>Try this today</b>Take your own water bottle. Say no to one plastic thing you use only once.</div>
+      <div class="made">
+        <div class="lbl fr">Made by:</div>
+        <div class="chips">
+          <b style="background:#ffd23f">Delta</b><b style="background:#b8f1e0">Angpao</b><b style="background:#ffb3c7">Titan</b><b style="background:#c9f0a8">Tawan</b><b style="background:#d9ccff">Putter</b>
+        </div>
+      </div>
+    </div>
+    <div class="pass hand">Pass this leaflet to a friend!</div>
+  </div>
+
+  <!-- ============ FRONT COVER ============ -->
+  <div class="panel">
+    <svg class="bg" viewBox="0 0 99 209" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="seaG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1fb8c9"/>
+          <stop offset=".36" stop-color="#0b6a95"/>
+          <stop offset=".7" stop-color="#0a2f66"/>
+          <stop offset="1" stop-color="#061532"/>
+        </linearGradient>
+        <radialGradient id="sunG" cx=".5" cy=".5" r=".5">
+          <stop offset="0" stop-color="#fff6c9" stop-opacity=".95"/>
+          <stop offset="1" stop-color="#fff6c9" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="glowP" cx=".5" cy=".5" r=".5">
+          <stop offset="0" stop-color="#ff7fd0" stop-opacity=".6"/>
+          <stop offset="1" stop-color="#ff7fd0" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="glowC" cx=".5" cy=".5" r=".5">
+          <stop offset="0" stop-color="#6ff2ff" stop-opacity=".6"/>
+          <stop offset="1" stop-color="#6ff2ff" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="99" height="209" fill="url(#seaG)"/>
+      <circle cx="88" cy="2" r="46" fill="url(#sunG)"/>
+      <g fill="#fff" fill-opacity=".08">
+        <polygon points="40,0 56,0 20,170 0,170"/>
+        <polygon points="62,0 74,0 56,175 34,175"/>
+        <polygon points="80,0 92,0 99,120 80,150"/>
+      </g>
+      <rect width="99" height="209" fill="url(#dotsW)"/>
+      <!-- glows -->
+      <circle cx="13" cy="110" r="16" fill="url(#glowP)"/>
+      <circle cx="30" cy="188" r="16" fill="url(#glowC)"/>
+      <circle cx="82" cy="150" r="14" fill="url(#glowC)"/>
+      <!-- bubbles -->
+      <use href="#bub" x="4" y="125" width="5" height="5"/>
+      <use href="#bub" x="88" y="92" width="4" height="4"/>
+      <use href="#bub" x="90" y="136" width="6" height="6"/>
+      <use href="#bub" x="50" y="100" width="4" height="4"/>
+      <use href="#bub" x="26" y="94" width="3" height="3"/>
+      <use href="#bub" x="62" y="150" width="3" height="3"/>
+      <use href="#bub" x="8" y="170" width="4" height="4"/>
+      <use href="#bub" x="70" y="178" width="3" height="3"/>
+      <use href="#sparkle" x="56" y="116" width="4" height="4" style="color:#fff4dc"/>
+      <use href="#sparkle" x="4" y="102" width="3" height="3" style="color:#ffd23f"/>
+      <use href="#sparkle" x="90" y="164" width="4" height="4" style="color:#fff4dc"/>
+      <!-- tiny plastic bits -->
+      <g fill="#ffd23f" fill-opacity=".95">
+        <rect x="22" y="126" width="2.2" height="1.1" transform="rotate(30 23 126)"/>
+        <rect x="82" y="170" width="2" height="1" transform="rotate(-20 83 170)"/>
+        <rect x="46" y="182" width="1.8" height=".9" transform="rotate(55 47 182)"/>
+        <rect x="8" y="142" width="1.6" height=".8" transform="rotate(-40 9 142)"/>
+        <rect x="58" y="104" width="1.6" height=".8" transform="rotate(20 59 104)"/>
+      </g>
+      <g fill="#ff7a59" fill-opacity=".95">
+        <rect x="70" y="160" width="2" height="1" transform="rotate(40 71 160)"/>
+        <rect x="34" y="124" width="1.8" height=".9" transform="rotate(-25 35 124)"/>
+        <rect x="88" y="128" width="1.6" height=".8" transform="rotate(15 89 128)"/>
+        <rect x="26" y="174" width="1.8" height=".9" transform="rotate(70 27 174)"/>
+      </g>
+      <!-- sea floor -->
+      <path d="M0 194 C22 187 55 199 99 190 L99 209 L0 209 Z" fill="#d4a964"/>
+      <path d="M0 199 C26 193 62 204 99 196 L99 209 L0 209 Z" fill="#efd397"/>
+      <use href="#weed" x="4" y="166" width="9" height="36" style="color:#1f9d8f"/>
+      <use href="#weed" x="12" y="176" width="7" height="26" style="color:#3fd19a"/>
+      <use href="#weed" x="80" y="170" width="9" height="36" style="color:#1f9d8f"/>
+      <use href="#weed" x="88" y="180" width="7" height="26" style="color:#3fd19a"/>
+      <use href="#coral" x="64" y="181" width="10" height="12.5" style="color:#ff5d73"/>
+      <use href="#coral" x="22" y="183" width="8" height="10" style="color:#ffd23f"/>
+      <use href="#crab" x="40" y="195" width="12" height="8"/>
+      <use href="#star" x="16" y="196" width="7" height="7"/>
+      <use href="#shell" x="78" y="197" width="7" height="6.3"/>
+      <!-- jellyfish -->
+      <use href="#jelly" x="6" y="98" width="14" height="22.4" style="color:#ff9ecb"/>
+      <use href="#jelly" x="24" y="164" width="9" height="14.4" style="color:#9ff3ff"/>
+      <!-- plastic -->
+      <use href="#bottle" width="8" height="20" transform="translate(32 104) rotate(25)"/>
+      <use href="#can" width="7" height="10.5" transform="translate(48 124) rotate(-25)"/>
+      <use href="#bag" width="17" height="22" transform="translate(70 130) rotate(12 8 11)"/>
+      <use href="#turtle" width="60" height="43" transform="translate(8 138) rotate(-8 30 21)"/>
+      <use href="#fish" x="74" y="164" width="11" height="5.7" style="color:#ffd23f"/>
+      <!-- badge -->
+      <g transform="translate(81 108) rotate(-12)">
+        <circle r="12.8" fill="#081c3a" opacity=".35" transform="translate(.7 .9)"/>
+        <circle r="12.5" fill="#ff5d73"/>
+        <circle r="11.2" fill="none" stroke="#fff" stroke-width=".4" stroke-dasharray="1 1"/>
+        <path id="badgePath" d="M0,-8.4 A8.4,8.4 0 1,1 -0.01,-8.4" fill="none"/>
+        <text fill="#fff" style="font:800 2.2px Nunito,sans-serif;letter-spacing:.25px"><textPath href="#badgePath">SAVE OUR SEA • SAVE OUR SEA •</textPath></text>
+        <use href="#sparkle" x="-3.6" y="-3.6" width="7.2" height="7.2" style="color:#ffd23f"/>
+      </g>
+      <rect x="3" y="3" width="93" height="203" rx="5" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width=".35" stroke-dasharray="1.2 1.2"/>
+    </svg>
+    <div class="in cover-text">
+      <div class="kicker"><i></i>Save our sea</div>
+      <h1>
+        <span class="t1 fr">PLASTIC</span>
+        <span class="t2 hand">in our</span>
+        <span class="t3 fr">OCEAN</span>
+      </h1>
+      <svg class="sq" viewBox="0 0 60 6"><path d="M2 3 Q8 0 14 3 T26 3 T38 3 T50 3 T58 3" stroke="#ff5d73" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
+      <p class="sub">Easy facts about plastic in the sea, and how you can help.</p>
+    </div>
+    <div class="open fr">Open me to read more</div>
+  </div>
+
+  <div class="fold f1"><span class="t">fold</span><span class="b">fold</span></div>
+  <div class="fold f2"><span class="t">fold</span><span class="b">fold</span></div>
+</div>
+
+
+<!-- ====================================================== -->
+<!-- PAGE 2 : INSIDE                                         -->
+<!-- ====================================================== -->
+<div class="sheet">
+
+  <!-- ============ INSIDE LEFT ============ -->
+  <div class="panel">
+    <svg class="bg" viewBox="0 0 99 209" preserveAspectRatio="none">
+      <rect width="99" height="209" fill="#fff4dc"/>
+      <rect y="38" width="99" height="150" fill="url(#wavy)"/>
+      <circle cx="104" cy="122" r="24" fill="#bff0ea" fill-opacity=".8"/>
+      <circle cx="-3" cy="96" r="12" fill="#ffb3c7" fill-opacity=".6"/>
+      <use href="#band" width="99" height="40" style="color:#081c3a"/>
+      <use href="#sparkle" x="62" y="8" width="5" height="5" style="color:#ffd23f"/>
+      <use href="#sparkle" x="90" y="104" width="6" height="6" style="color:#ff5d73"/>
+      <path d="M0 184 C25 176 60 190 99 180 L99 209 L0 209 Z" fill="#f6dfa6"/>
+      <path d="M0 195 C30 189 65 199 99 192 L99 209 L0 209 Z" fill="#e0bd78"/>
+      <use href="#weed" x="6" y="156" width="10" height="40" style="color:#1f9d8f"/>
+      <use href="#weed" x="15" y="168" width="8" height="30" style="color:#3fd19a"/>
+      <use href="#weed" x="82" y="158" width="10" height="40" style="color:#1f9d8f"/>
+      <use href="#coral" x="68" y="172" width="10" height="12.5" style="color:#ff5d73"/>
+      <use href="#coral" x="28" y="174" width="8" height="10" style="color:#7b5cff"/>
+      <use href="#star" x="40" y="191" width="9" height="9"/>
+      <use href="#shell" x="56" y="194" width="8" height="7"/>
+      <use href="#fish" x="42" y="166" width="14" height="7.2" style="color:#0b5d7a"/>
+      <use href="#bub" x="36" y="160" width="4" height="4" style="color:#0b5d7a"/>
+    </svg>
+    <div class="in">
+      <div class="hd"><span class="no fr">01</span><small>The problem</small><h2 class="fr">What is the problem?</h2></div>
+      <div class="bd">
+        <p>Every year, lots of plastic ends up in the sea. Plastic does not rot like food or paper. It stays there for a very long time.</p>
+        <p>Sun and waves break it into tiny pieces called <b>microplastics</b>. They are smaller than a grain of rice.</p>
+
+        <div class="dcard">
+          <svg viewBox="0 0 81 36">
+            <use href="#bottle" x="4" y="2" width="10" height="25"/>
+            <path d="M17 17 H25 M22.5 14.5 L25 17 L22.5 19.5" stroke="#ffd23f" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <g fill="#bfe6ea" stroke="#fff" stroke-width=".4" stroke-linejoin="round">
+              <polygon points="29,10 36,8 39,14 32,17"/>
+              <polygon points="38,17 45,15 46,22 40,24"/>
+              <polygon points="30,20 36,20 35,26 29,25"/>
+            </g>
+            <path d="M48 17 H56 M53.5 14.5 L56 17 L53.5 19.5" stroke="#ffd23f" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <g fill="#bfe6ea">
+              <circle cx="62" cy="12" r=".8"/><circle cx="66" cy="10" r=".6"/><circle cx="71" cy="13" r=".9"/>
+              <circle cx="74" cy="18" r=".7"/><circle cx="69" cy="22" r=".8"/><circle cx="63" cy="20" r=".6"/>
+              <circle cx="65" cy="25" r=".7"/><circle cx="72" cy="25" r=".6"/><circle cx="67" cy="17" r=".9"/>
+              <circle cx="75" cy="11" r=".5"/><circle cx="61" cy="17" r=".5"/><circle cx="70" cy="8" r=".5"/>
+            </g>
+            <text class="dl" x="9" y="34">Bottle</text>
+            <text class="dl" x="36" y="34">Pieces</text>
+            <text class="dl" x="68" y="34">Tiny bits</text>
+          </svg>
+        </div>
+
+        <div class="life">
+          <h3 class="fr">How long does it last?</h3>
+          <div class="row"><span>Plastic bag</span><div class="tr"><i style="width:6%;background:#ffd23f"></i></div><b>20 years</b></div>
+          <div class="row"><span>Bottle</span><div class="tr"><i style="width:75%;background:#ff7a59"></i></div><b>450 years</b></div>
+          <div class="row"><span>Fishing line</span><div class="tr"><i style="width:100%;background:#ff5d73"></i></div><b>600 years</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ INSIDE MIDDLE ============ -->
+  <div class="panel">
+    <svg class="bg" viewBox="0 0 99 209" preserveAspectRatio="none">
+      <rect width="99" height="209" fill="#fff4dc"/>
+      <rect y="36" width="99" height="136" fill="url(#dotsP)"/>
+      <circle cx="-4" cy="150" r="18" fill="#d9ccff" fill-opacity=".7"/>
+      <circle cx="102" cy="100" r="16" fill="#ffe08a" fill-opacity=".7"/>
+      <use href="#band" width="99" height="40" style="color:#0b5d7a"/>
+      <use href="#sparkle" x="62" y="8" width="5" height="5" style="color:#ffd23f"/>
+      <use href="#sparkle" x="90" y="148" width="6" height="6" style="color:#ff5d73"/>
+      <path d="M0 172 C20 166 35 178 55 172 S85 166 99 172 L99 209 L0 209 Z" fill="#5fd0d6"/>
+      <path d="M0 181 C20 175 35 187 55 181 S85 175 99 181 L99 209 L0 209 Z" fill="#0b5d7a"/>
+      <path d="M0 192 C20 186 35 198 55 192 S85 186 99 192 L99 209 L0 209 Z" fill="#081c3a"/>
+      <use href="#jelly" x="12" y="178" width="13" height="20.8" style="color:#ff9ecb"/>
+      <use href="#jelly" x="30" y="174" width="8" height="12.8" style="color:#bfe6ea"/>
+      <use href="#bag" x="72" y="182" width="13" height="16.7"/>
+      <use href="#bub" x="20" y="174" width="4" height="4"/>
+      <use href="#bub" x="64" y="184" width="4" height="4"/>
+      <use href="#bub" x="90" y="178" width="5" height="5"/>
+      <text x="52" y="194" text-anchor="middle" fill="#bfe6ea" style="font:800 3.3px Nunito,sans-serif">Which one is</text>
+      <text x="52" y="198.5" text-anchor="middle" fill="#bfe6ea" style="font:800 3.3px Nunito,sans-serif">the jellyfish?</text>
+    </svg>
+    <div class="in">
+      <div class="hd"><span class="no fr">02</span><small>Look closer</small><h2 class="fr">Where does it come from?</h2></div>
+      <div class="bd">
+        <div class="flow">
+          <svg viewBox="0 0 81 36">
+            <rect width="81" height="36" fill="#dff7f4"/>
+            <circle cx="72" cy="8" r="4" fill="#ffd23f"/>
+            <path d="M36 10 a3 3 0 0 1 3 -3 a4 4 0 0 1 7 0 a3 3 0 0 1 3 3 Z" fill="#fff"/>
+            <path d="M40 12 l-.6 2 M44 12 l-.6 2 M47 12 l-.6 2" stroke="#14829f" stroke-width=".6" stroke-linecap="round"/>
+            <path d="M0 27 Q10 19 26 25 L26 36 L0 36 Z" fill="#8fd694"/>
+            <rect x="7" y="17" width="9" height="8" fill="#ff5d73"/>
+            <path d="M5.5 17.5 L11.5 11.5 L17.5 17.5 Z" fill="#081c3a"/>
+            <rect x="10" y="20" width="3" height="5" fill="#fff4dc"/>
+            <rect x="19" y="23" width="4" height="3.5" rx=".8" fill="#ffd23f" stroke="#081c3a" stroke-width=".3"/>
+            <text class="dl" x="13" y="33.2" style="fill:#081c3a">Land</text>
+            <path d="M27 21 H33 M31 19 L33 21 L31 23" stroke="#081c3a" stroke-width=".9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M35 24 Q39 20 43 24 T51 24 V36 H35 Z" fill="#8fd6e4"/>
+            <rect x="40" y="25.5" width="3.6" height="3" rx=".8" fill="#ffd23f" stroke="#081c3a" stroke-width=".3"/>
+            <text class="dl" x="43" y="33.2" style="fill:#081c3a">River</text>
+            <path d="M52 21 H58 M56 19 L58 21 L56 23" stroke="#081c3a" stroke-width=".9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M60 22 Q64 19 68 22 T76 22 T81 22 V36 H60 Z" fill="#14829f"/>
+            <path d="M60 28 Q64 25 68 28 T76 28 T81 28 V36 H60 Z" fill="#0b5d7a"/>
+            <g fill="#ffd23f"><circle cx="64" cy="26" r=".6"/><circle cx="70" cy="25" r=".6"/><circle cx="75" cy="27" r=".6"/><circle cx="67" cy="30" r=".5"/></g>
+            <text class="dl" x="70.5" y="33.6">Sea</text>
+          </svg>
+        </div>
+        <ul class="dots">
+          <li>Rubbish left on beaches and streets</li>
+          <li>Rain and rivers wash it into the sea</li>
+          <li>Lost fishing nets, bags, bottles and straws</li>
+        </ul>
+        <div class="card2">
+          <h3 class="fr">Who does it hurt?</h3>
+          <ul class="dots">
+            <li>Turtles eat bags. They think it is jellyfish.</li>
+            <li>Birds and fish eat tiny bits.</li>
+            <li>Animals get stuck in nets and rings.</li>
+            <li>People can eat it too.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ INSIDE RIGHT ============ -->
+  <div class="panel">
+    <svg class="bg" viewBox="0 0 99 209" preserveAspectRatio="none">
+      <rect width="99" height="209" fill="#081c3a"/>
+      <rect width="99" height="209" fill="url(#dotsW)"/>
+      <circle cx="100" cy="112" r="30" fill="#1f9d8f" fill-opacity=".22"/>
+      <circle cx="-4" cy="72" r="20" fill="#ffd23f" fill-opacity=".12"/>
+      <use href="#band" width="99" height="40" style="color:#0e8f94"/>
+      <use href="#sparkle" x="62" y="8" width="5" height="5" style="color:#fff"/>
+      <use href="#sparkle" x="90" y="130" width="5" height="5" style="color:#ffd23f"/>
+      <use href="#sparkle" x="4" y="140" width="4" height="4" style="color:#ff9ecb"/>
+      <use href="#bub" x="92" y="148" width="4" height="4"/>
+      <use href="#bub" x="3" y="124" width="5" height="5"/>
+      <path d="M0 158 C15 152 30 164 50 158 S85 152 99 158 L99 209 L0 209 Z" fill="#bff0ea"/>
+      <path d="M0 168 C18 162 34 174 52 168 S84 162 99 168 L99 209 L0 209 Z" fill="#5fd0d6"/>
+      <path d="M0 178 C16 172 34 184 52 178 S84 172 99 178 L99 209 L0 209 Z" fill="#0b5d7a"/>
+      <path d="M0 190 C20 184 36 196 54 190 S84 184 99 190 L99 209 L0 209 Z" fill="#061532"/>
+      <use href="#turtle" width="44" height="31.4" transform="translate(30 160) rotate(6 22 15)"/>
+      <use href="#fish" x="8" y="172" width="14" height="7.2" style="color:#ffd23f"/>
+      <use href="#fish" width="12" height="6.2" transform="translate(93 178) scale(-1 1)" style="color:#ff7a59"/>
+      <use href="#bub" x="26" y="162" width="4" height="4"/>
+      <use href="#bub" x="84" y="170" width="4" height="4"/>
+    </svg>
+    <div class="in">
+      <div class="hd"><span class="no fr">03</span><small style="color:#fff">Take action</small><h2 class="fr">What can we do?</h2></div>
+      <div class="bd">
+
+        <div class="step"><div class="num fr">1</div><div class="tx">Use a bottle and bag <b>again and again.</b></div>
+          <div class="si"><svg viewBox="0 0 24 24"><use href="#bottle" x="7" y="1" width="10" height="22"/></svg></div></div>
+
+        <div class="step"><div class="num fr">2</div><div class="tx">Say <b>no</b> to plastic straws and cups.</div>
+          <div class="si"><svg viewBox="0 0 24 24"><path d="M9 21 L15 4" stroke="#ffd23f" stroke-width="3.4" stroke-linecap="round"/><path d="M10.5 16 L12.4 10.5" stroke="#fff" stroke-opacity=".7" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="10" fill="none" stroke="#ff5d73" stroke-width="2.2"/><path d="M5 19 L19 5" stroke="#ff5d73" stroke-width="2.2" stroke-linecap="round"/></svg></div></div>
+
+        <div class="step"><div class="num fr">3</div><div class="tx">Put rubbish in the <b>bin.</b> Recycle too.</div>
+          <div class="si"><svg viewBox="0 0 24 24"><path d="M6 8 H18 L16.6 21.5 H7.4 Z" fill="#7fe0d8"/><rect x="4" y="5" width="16" height="2.8" rx="1.2" fill="#fff"/><path d="M10 5 V3 H14 V5" stroke="#fff" stroke-width="1.6" fill="none"/><path d="M10 11 L10.5 18 M14 11 L13.5 18" stroke="#081c3a" stroke-width="1.2" stroke-linecap="round"/></svg></div></div>
+
+        <div class="step"><div class="num fr">4</div><div class="tx">Join a <b>beach clean-up</b> near you.</div>
+          <div class="si"><svg viewBox="0 0 24 24"><use href="#star" x="2" y="2" width="20" height="20"/></svg></div></div>
+
+        <div class="step"><div class="num fr">5</div><div class="tx">Tell your <b>family and friends.</b></div>
+          <div class="si"><svg viewBox="0 0 24 24"><path d="M4 4 H20 Q22 4 22 6 V14 Q22 16 20 16 H12 L7 21 V16 H4 Q2 16 2 14 V6 Q2 4 4 4Z" fill="#ffd23f"/><circle cx="8" cy="10" r="1.3" fill="#081c3a"/><circle cx="12" cy="10" r="1.3" fill="#081c3a"/><circle cx="16" cy="10" r="1.3" fill="#081c3a"/></svg></div></div>
+
+        <div class="promise">
+          <div class="tape"></div>
+          <b>My promise</b>
+          <div class="line">I will <i></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="shout hand">You can do it!</div>
+    <div class="end fr">Keep our ocean clean!</div>
+  </div>
+
+  <div class="fold f1"><span class="t">fold</span><span class="b">fold</span></div>
+  <div class="fold f2"><span class="t">fold</span><span class="b">fold</span></div>
+</div>
+
+</body>
+</html>
